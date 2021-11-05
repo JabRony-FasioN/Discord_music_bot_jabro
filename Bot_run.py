@@ -70,22 +70,6 @@ async def remove(ctx,idx):
     song = await player.remove_from_queue(int(idx))
     await ctx.send(f"Removed {song.name} from queue")
 
-async def butt(ctx):
-    await ctx.send(
-        components=[
-        Button(style = ButtonStyle.green, label= "resume" ),
-        Button(style = ButtonStyle.red, label= "pause" ),
-        Button(style = ButtonStyle.blue, label= "loop" )
-    ])
-    response = await client.wait_for("button_click")
-    if response.channel == ctx.channel:
-        if response.component.label == "resume":
-            resume(ctx)
-        elif response.componets.label == "pause":
-            pause(ctx)
-        elif response.componets.label == "loop":
-            loop(ctx)
-
 @client.command()
 async def play(ctx, *, url):
     player = music.get_player(guild_id = ctx.guild.id)
@@ -104,11 +88,18 @@ async def play(ctx, *, url):
         response = await client.wait_for("button_click")
         if response.channel == ctx.channel:
             if response.component.label == "resume":
-                await resume(ctx)
-            elif response.componets.label == "pause":
-                await pause(ctx)
-            elif response.componets.label == "loop":
-                await loop(ctx)
+                player = music.get_player(guild_id=ctx.guild.id)
+                song = await player.resume()
+                await ctx.send(f'Resumed {song.name}')
+            elif response.component.label == "pause":
+                player = music.get_player(guild_id=ctx.guild.id)
+                song = await player.pause()
+                await ctx.send(f'Paussed {song.name}')
+
+            elif response.component.label == "loop":
+                player = music.get_player(guild_id =ctx.guild.id)
+                song = await player.toggle_song_loop()
+              
     else:
         song = await player.queue(url,search= True)
         await ctx.send(f'{song.name} has been added to playlist') 
