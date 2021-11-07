@@ -1,15 +1,14 @@
 from DiscordUtils.Music import Song
 import discord
-import os
 from discord.ext import commands
 from discord.ext.commands.core import guild_only
 #from discord.ext.commands.core import command, guild_only
 from dotenv import load_dotenv
 from discord import FFmpegPCMAudio
 from discord import TextChannel
-import youtube_dl 
 import DiscordUtils 
-from discord_components import DiscordComponents, Button, ButtonStyle 
+from discord_components import DiscordComponents, Button, ButtonStyle
+import asyncio
 
 client = commands.Bot(command_prefix='~', Intents = discord.Intents.all())
 
@@ -41,13 +40,17 @@ async def queue(ctx):
 async def pause(ctx):
     player = music.get_player(guild_id=ctx.guild.id)
     song = await player.pause()
-    await ctx.send(f'Paussed {song.name}')
-
+    msg =await ctx.send(f'Paussed {song.name}')
+    await asyncio.sleep(5)
+    await msg.delete()
+    
 @client.command()
 async def resume(ctx):
     player = music.get_player(guild_id=ctx.guild.id)
     song = await player.resume()
-    await ctx.send(f'Resumed {song.name}')
+    msg = await ctx.send(f'Resumed {song.name}')
+    await asyncio.sleep(5)
+    await msg.delete()
 
 @client.command()
 async def loop(ctx):
@@ -68,7 +71,12 @@ async def nowplay(ctx):
 async def remove(ctx,idx):
     player = music.get_player(guild_id = ctx.guild.id)
     song = await player.remove_from_queue(int(idx))
-    await ctx.send(f"Removed {song.name} from queue")
+    msg0 = await ctx.send(f"Removed {song.name} from queue")
+    msg = await ctx.send(f'Resumed {song.name}')
+    await asyncio.sleep(5)
+    await msg.delete()
+    await msg0.delete()
+
 
 @client.command()
 async def play(ctx, *, url):
@@ -79,27 +87,31 @@ async def play(ctx, *, url):
         await player.queue(url,search = True)
         song = await player.play()
         await ctx.send(f'i have started playing {song.name}')
+        embed = discord.Embed(title="List of commands.", description="The music", colour=discord.Color.orange())
+      #  msg = await ctx.send(embed=embed)
         await ctx.send(content = "option",
         components=[
         Button(style = ButtonStyle.green, label= "resume" ),
         Button(style = ButtonStyle.red, label= "pause" ),
-        Button(style = ButtonStyle.blue, label= "loop" )  
-    ])
-        response = await client.wait_for("button_click")
-        if response.channel == ctx.channel:
-            if response.component.label == "resume":
-                player = music.get_player(guild_id=ctx.guild.id)
-                song = await player.resume()
-                await ctx.send(f'Resumed {song.name}')
-            elif response.component.label == "pause":
-                player = music.get_player(guild_id=ctx.guild.id)
-                song = await player.pause()
-                await ctx.send(f'Paussed {song.name}')
+        Button(style = ButtonStyle.blue, label= "remove" )  
+    ]) 
+        while True:
+            response = await client.wait_for("button_click")
+            if response.channel == ctx.channel:
+                if response.component.label == "resume":
+                    await response.edit_origin()
+ 
+                    await resume(ctx)
 
-            elif response.component.label == "loop":
-                player = music.get_player(guild_id =ctx.guild.id)
-                song = await player.toggle_song_loop()
-              
+                elif response.component.label == "pause":
+                    await response.edit_origin()
+
+                    await pause(ctx)
+                    await response.edit_origin() 
+
+                elif response.component.label == "remove":
+                    await remove(ctx, 0)
+                    await response.edit_origin()
     else:
         song = await player.queue(url,search= True)
         await ctx.send(f'{song.name} has been added to playlist') 
